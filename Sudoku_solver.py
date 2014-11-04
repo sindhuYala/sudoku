@@ -47,7 +47,31 @@ def basic_solver(A):
         print "Finished basic run"
     return A
     
-    
+def guess_solver(A):
+    guessA = A
+    complete_list = [1,2,3,4,5,6,7,8,9];
+    possibleValueDict = dict()
+    guessValueDict = dict()
+    for r in range(0,9):
+        for c in range(0,9):
+            if guessA[r,c] == 0:
+                possibleValues = getPossibleValues(r,c, complete_list)
+                possibleValueDict[r,c] = possibleValues
+    for key, value in possibleValueDict.iteritems():
+        if len(value) == 1:
+            guessA[key(0),key(1)] = value[0]
+        elif len(value) > 1:
+            # make a guess - assign the first value in list to empty cell
+            guess_value = guessValueDict.get(key)
+            guess_new = [i for i in value and i not in guess_value]
+            guessValueDict[key(0),key(1)] = guess_value.append(guess_new[0])
+            guessA[key(0),key(1)] = guess_new[0]
+            #we have new puzzle with another block filled, so we use the basic_solver
+            guessA = basic_solver(guessA)
+            if 0 not in guessA:
+                return guessA
+            else:
+                guessA = guess_solver(guessA)
 
 if __name__ == '__main__':
   if len(sys.argv) == 3:
@@ -68,8 +92,11 @@ if __name__ == '__main__':
                        np.split(A, 3, 0))
         blocks = np.array(blocks)
         A = basic_solver(A)
-        print A
-        np.savetxt(output_filename, A, fmt='%1d',delimiter=',')
+        if 0 not in A:
+            print A
+            np.savetxt(output_filename, A, fmt='%1d',delimiter=',')
+        else:
+            guessA = guess_solver(A)
     except MyException as e:
         print "Answer\n"
         print A
