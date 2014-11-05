@@ -44,34 +44,46 @@ def basic_solver(A):
                     continue
         count = count + 1
     else:
-        print "Finished basic run"
+        print "Finished basic run to fill in obvious cells"
     return A
-    
-def guess_solver(A):
-    guessA = A
-    complete_list = [1,2,3,4,5,6,7,8,9];
+
+def guess(cell, possible_guesses, used_guesses):
+    print 'make a guess for the first empty cell'
+    guess = [i for i in possible_guesses if not i in used_guesses]
+    return guess[0]
+
+def guess_iter(A, guessDict):
+    #make a copy of A
+    A_guess = A
     possibleValueDict = dict()
-    guessValueDict = dict()
+    complete_list = [1,2,3,4,5,6,7,8,9];
     for r in range(0,9):
         for c in range(0,9):
-            if guessA[r,c] == 0:
+            if A_guess[r,c] == 0:
                 possibleValues = getPossibleValues(r,c, complete_list)
+                # chk if possibleValues is empty, if yes break the loop and guess again
+                if len(possibleValues) == 0:
+                    guess_iter(A, guessDict)
                 possibleValueDict[r,c] = possibleValues
+    print possibleValueDict
     for key, value in possibleValueDict.iteritems():
-        if len(value) == 1:
-            guessA[key(0),key(1)] = value[0]
-        elif len(value) > 1:
-            # make a guess - assign the first value in list to empty cell
-            guess_value = guessValueDict.get(key)
-            guess_new = [i for i in value and i not in guess_value]
-            guessValueDict[key(0),key(1)] = guess_value.append(guess_new[0])
-            guessA[key(0),key(1)] = guess_new[0]
-            #we have new puzzle with another block filled, so we use the basic_solver
-            guessA = basic_solver(guessA)
-            if 0 not in guessA:
-                return guessA
-            else:
-                guessA = guess_solver(guessA)
+        if guessDict.get(key) != None:
+                old_guess = guessDict.get(key)
+        else:
+                old_guess = [0]
+        #make a guess for first cell
+        new_guess = guess(key,value,old_guess)
+        # track guesses made for each cell
+        guessDict[key] = old_guess.append(new_guess)
+        A_guess[key] = new_guess
+        print A_guess
+        A_guess = basic_solver(A_guess)
+        print A_guess
+        if 0 in A_guess:
+            guess_iter(A_guess, guessDict)
+        else:
+            return A_guess
+    
 
 if __name__ == '__main__':
   if len(sys.argv) == 3:
@@ -82,7 +94,7 @@ if __name__ == '__main__':
     reader=csv.reader(open(input_filename,'r'),delimiter=',')
     x=list(reader)
     A=np.matrix(x).astype('int')
-
+    
     if A.size != 81:
         sys.exit("file incorrectly formatted - must contain 81 digits")
 
@@ -94,9 +106,11 @@ if __name__ == '__main__':
         A = basic_solver(A)
         if 0 not in A:
             print A
-            np.savetxt(output_filename, A, fmt='%1d',delimiter=',')
+            #np.savetxt(output_filename, A, fmt='%1d',delimiter=',')
         else:
-            guessA = guess_solver(A)
+            guessDict = dict()
+            guess_iter(A, guessDict)
+            #guessA = guess_solver(A)
     except MyException as e:
         print "Answer\n"
         print A
